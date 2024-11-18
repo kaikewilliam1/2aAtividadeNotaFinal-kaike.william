@@ -1,0 +1,127 @@
+index.php
+
+<?php
+
+require_once 'database.php';
+
+$sql = "SELECT * FROM livros";
+$stmt = $pdo->query($sql);
+$livros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if (isset($_GET['excluir'])) {
+    $id = (int) $_GET['excluir'];
+    $stmt = $pdo->prepare("DELETE FROM livros WHERE id = :id");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    header('Location: index.php'); // Redireciona após excluir
+    exit;
+}
+
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livraria</title>
+</head>
+<body>
+    <h1>Livraria</h1>
+
+    <h2>Adicionar Novo Livro</h2>
+    <form action="add_book.php" method="POST">
+        <label for="titulo">Título:</label>
+        <input type="text" name="titulo" required><br><br>
+        <label for="autor">Autor:</label>
+        <input type="text" name="autor" required><br><br>
+        <label for="ano_publicacao">Ano de Publicação:</label>
+        <input type="number" name="ano_publicacao" required><br><br>
+        <input type="submit" value="Adicionar Livro">
+    </form>
+
+    <h2>Livros Cadastrados</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>Ano de Publicação</th>
+            <th>Ações</th>
+        </tr>
+        <?php foreach ($livros as $livro): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($livro['id']); ?></td>
+                <td><?php echo htmlspecialchars($livro['titulo']); ?></td>
+                <td><?php echo htmlspecialchars($livro['autor']); ?></td>
+                <td><?php echo htmlspecialchars($livro['ano_publicacao']); ?></td>
+                <td>
+                    <a href="?excluir=<?php echo $livro['id']; ?>">Excluir</a>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+</body>
+</html>
+
+
+database.php
+
+<?php
+
+$dsn = 'sqlite:livraria.db'; // Arquivo SQLite
+try {
+
+    $pdo = new PDO($dsn);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS livros (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        titulo TEXT NOT NULL,
+        autor TEXT NOT NULL,
+        ano_publicacao INTEGER NOT NULL
+    )");
+
+} catch (PDOException $e) {
+    die("Erro ao conectar com o banco de dados: " . $e->getMessage());
+}
+?>
+
+add_book.php
+
+<?php
+
+require_once 'database.php';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $titulo = $_POST['titulo'];
+    $autor = $_POST['autor'];
+    $ano_publicacao = $_POST['ano_publicacao'];
+
+    $sql = "INSERT INTO livros (titulo, autor, ano_publicacao) VALUES (:titulo, :autor, :ano_publicacao)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':titulo', $titulo);
+    $stmt->bindParam(':autor', $autor);
+    $stmt->bindParam(':ano_publicacao', $ano_publicacao);
+    $stmt->execute();
+
+    header('Location: index.php');
+    exit;
+}
+?>
+
+delete_book.php
+
+<?php
+
+require_once 'database.php';
+
+if (isset($_GET['id'])) {
+    $id = (int) $_GET['id'];
+    $stmt = $pdo->prepare("DELETE FROM livros WHERE id = :id");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    header('Location: index.php'); // Redireciona após excluir
+    exit;
+}
+?>
+
